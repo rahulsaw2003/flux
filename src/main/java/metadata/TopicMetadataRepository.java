@@ -1,0 +1,17 @@
+package metadata;
+
+import server.internal.storage.Partition;
+import commons.MiniKafkaTopic;
+import commons.IntRange;
+
+import java.util.List;
+import java.util.Set;
+
+public interface TopicMetadataRepository {
+    void addNewTopic(String topicName, MiniKafkaTopic topic);
+    boolean deleteTopic(String topicName);
+    boolean topicExists(String topicName);
+    Set<String> getActiveTopics();
+    List<Partition> getPartitionsFor(String topicName);
+    IntRange getPartitionIdRangeForTopic(String topicName);
+}
