@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+import "common.proto";
+
+option java_package = "proto";
+option java_multiple_files = true;
+
+service ConsumerService {
+  rpc FetchMessage(FetchMessageRequest) returns (FetchMessageResponse);
+}
+
+message FetchMessageRequest {
+  string topic = 1;
+  int32 partition_id = 2;
+  int32 starting_offset = 3;
+}
+
+message FetchMessageResponse {
+  Message message = 1;
+  Status status = 2;
+  int32 next_offset = 3; // to read from
+}
+
+message Message {
+  string topic = 1;
+  int32 partition = 2;
+  int32 offset = 3;
+  int64 timestamp = 4;
+  string key = 5;
+  string value = 6;
+}

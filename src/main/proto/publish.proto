@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+import "common.proto";
+
+option java_package = "proto";
+option java_multiple_files = true;
+
+service PublishToBroker {
+  rpc Send(PublishDataToBrokerRequest) returns (BrokerToPublisherAck);
+}
+
+message PublishDataToBrokerRequest {
+  repeated Record records = 1;
+}
+
+message Record {
+  string topic = 1;
+  int32 target_partition = 2;
+  bytes data = 3;
+}
+
+message BrokerToPublisherAck {
+  string acknowledgement = 1;
+  Status status = 2;
+  int32 record_offset = 3;
+}

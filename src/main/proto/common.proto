@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+option java_package = "proto";
+option java_multiple_files = true;
+
+enum Status {
+  SUCCESS = 0;
+  TRANSIENT_FAILURE = 1; // aka temporary failure
+  PERMANENT_FAILURE = 2;
+  FAILURE = 3; // if u want to just be general
+  READ_COMPLETION = 4;
+  BROKER_SHUTDOWN_IN_PROGRESS = 5;
+}
+
+// Shared timestamp type
+message Timestamp {
+  int64 milliseconds = 1;
+}
+
+// Both the metadata and controller service use this
+message PartitionDetails {
+  uint32 partition_id = 1;
+  string broker_id = 2;
+}
