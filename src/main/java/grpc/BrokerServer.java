@@ -24,17 +24,25 @@ public class BrokerServer {
     }
 
     public void start(int port) throws IOException {
-        server = Grpc.newServerBuilderForPort(port, InsecureServerCredentials.create())
-                .executor(executor)
-                .addService(new ProducerServiceImpl(this.broker))
-                .addService(new ConsumerServiceImpl(this.broker))
-                .addService(new CreateTopicsServiceImpl(this.broker))
-                .addService(new MetadataServiceImpl(this.broker))
-                .addService(new ControllerServiceImpl(this.broker))
-                .addService(new GroupCoordinatorServiceImpl(this.broker))
-                .addService(new HeartbeatServiceImpl(this.broker))
-                .build()
-                .start();
+        try {
+            Logger.info("Building gRPC server on port " + port);
+            server = Grpc.newServerBuilderForPort(port, InsecureServerCredentials.create())
+                    .executor(executor)
+                    .addService(new ProducerServiceImpl(this.broker))
+                    .addService(new ConsumerServiceImpl(this.broker))
+                    .addService(new CreateTopicsServiceImpl(this.broker))
+                    .addService(new MetadataServiceImpl(this.broker))
+                    .addService(new ControllerServiceImpl(this.broker))
+                    .addService(new GroupCoordinatorServiceImpl(this.broker))
+                    .addService(new HeartbeatServiceImpl(this.broker))
+                    .build();
+            Logger.info("gRPC server built successfully, now starting...");
+            server.start();
+            Logger.info("gRPC server started successfully");
+        } catch (Exception e) {
+            Logger.error("Exception while starting gRPC server: " + e.getMessage(), e);
+            throw e;
+        }
 
         System.out.printf("Server started @ %s:%d with broker ID = %s%n", broker.getHost(), port, broker.getBrokerId());
 

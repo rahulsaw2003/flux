@@ -282,9 +282,8 @@ public class LogSegment {
             return getRecordFromBuffer(recordOffset);
         }
 
-        System.out.println("Offsets contents: " + entries.recordOffsetToByteOffsets.entrySet());
         if (!entries.recordOffsetToByteOffsets.containsKey(recordOffset)) {
-            Logger.warn("Record not found with key = " + recordOffset);
+            // Logger.debug("Record not found at offset {} (partition likely empty or offset not yet written)", recordOffset);
             return null;
         }
         if (recordOffset > this.endOffset) {

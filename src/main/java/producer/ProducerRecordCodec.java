@@ -63,7 +63,8 @@ public class ProducerRecordCodec {
         byte[] recordData = new byte[recordSize];
         buffer.get(headerSizeInBytes, recordData);
 
-        // Dynamically register the types (K, V) of Producer Record
+        // Dynamically register the types (K, V) and ProducerRecord class
+        kryo.register(ProducerRecord.class, new ProducerRecordSerializer<>(keyClass, valueClass));
         kryo.register(keyClass);
         kryo.register(valueClass);
         Input input = new Input(recordData);

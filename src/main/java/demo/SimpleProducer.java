@@ -22,7 +22,7 @@ public class SimpleProducer {
         props.put("bootstrap.servers", "localhost:50051");
         props.put("compression.type", "snappy");
 
-        MiniKafkaProducer<String, String> producer = new MiniKafkaProducer<>(props);
+        MiniKafkaProducer<String, String> producer = new MiniKafkaProducer<>();
 
         ProducerRecord<String, String> record = new ProducerRecord<>(
             "demo-topic",

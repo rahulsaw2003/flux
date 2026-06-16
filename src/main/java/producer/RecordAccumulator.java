@@ -2,7 +2,6 @@ package producer;
 
 import commons.TopicPartition;
 import commons.utils.PartitionSelector;
-import metadata.InMemoryTopicMetadataRepository;
 import metadata.Metadata;
 import metadata.snapshots.ClusterSnapshot;
 import metadata.snapshots.PartitionMetadata;
@@ -65,14 +64,17 @@ public class RecordAccumulator {
         ProducerRecord<String, String> record = ProducerRecordCodec.deserialize(
                 serializedRecord, String.class, String.class);
 
+        // Get current cluster metadata from Metadata singleton
+        ClusterSnapshot clusterSnapshot = Metadata.getInstance().getClusterMetadataSnapshot().get();
+
         int partition = PartitionSelector.getPartitionNumberForRecord(
-                InMemoryTopicMetadataRepository.getInstance(),
+                clusterSnapshot,
                 record.getPartitionNumber(),
                 record.getKey(),
                 record.getTopic(),
                 numPartitions
         );
-        
+
         return new TopicPartition(record.getTopic(), partition);
     }
 
@@ -290,8 +292,8 @@ public class RecordAccumulator {
                 // Check if we've hit the in-flight limit for this partition
                 int inFlightCount = getInFlightCount(topicPartition);
                 if (inFlightCount >= config.getMaxInFlightRequests()) {
-                    Logger.debug("{} has {} in-flight batches, skipping (max: {})", 
-                               topicPartition, inFlightCount, config.getMaxInFlightRequests());
+                    // Logger.debug("{} has {} in-flight batches, skipping (max: {})", 
+                    //            topicPartition, inFlightCount, config.getMaxInFlightRequests());
                     continue;
                 }
                 
@@ -342,7 +344,7 @@ public class RecordAccumulator {
         }
         
         if (brokerReadyPartitions.isEmpty()) {
-            Logger.debug("No ready partitions found for broker {}", brokerAddress);
+            // Logger.debug("No ready partitions found for broker {}", brokerAddress);
             return drainedBatches;
         }
         
@@ -390,11 +392,11 @@ public class RecordAccumulator {
         drainIndexPerBroker.put(brokerAddress, (lastDrainedIndex + 1) % partitionCount);
         
         if (drainedBatches.isEmpty() && !brokerReadyPartitions.isEmpty()) {
-            Logger.debug("No batches drained for broker {} despite {} ready partitions", 
-                        brokerAddress, brokerReadyPartitions.size());
+            // Logger.debug("No batches drained for broker {} despite {} ready partitions", 
+            //             brokerAddress, brokerReadyPartitions.size());
         } else if (!drainedBatches.isEmpty()) {
-            Logger.debug("Drained {} batches ({} bytes) for broker {}", 
-                        drainedBatches.size(), totalSize, brokerAddress);
+            // Logger.debug("Drained {} batches ({} bytes) for broker {}", 
+            //             drainedBatches.size(), totalSize, brokerAddress);
         }
         
         return drainedBatches;

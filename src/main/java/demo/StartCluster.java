@@ -1,5 +1,6 @@
 package demo;
 
+import admin.Admin;
 import admin.MiniKafkaAdminClient;
 import admin.NewTopic;
 import java.util.Arrays;
@@ -21,7 +22,7 @@ public class StartCluster {
         props.put("bootstrap.servers", "localhost:50051,localhost:50052,localhost:50053");
         props.put("broker.count", "3");
 
-        MiniKafkaAdminClient admin = MiniKafkaAdminClient.create(props);
+        Admin admin = MiniKafkaAdminClient.create(props);
 
         // Wait for cluster to initialize
         Thread.sleep(3000);

@@ -1,5 +1,6 @@
 package grpc.services;
 
+import org.tinylog.Logger;
 import server.internal.Broker;
 import io.grpc.stub.StreamObserver;
 import proto.*;
@@ -20,7 +21,8 @@ public class CreateTopicsServiceImpl extends CreateTopicsServiceGrpc.CreateTopic
         try {
             this.broker.createTopics(req.getTopicsList());
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            Logger.error("IOException during topic creation: " + e.getMessage(), e);
+            throw new RuntimeException("Failed to create topics: " + e.getMessage(), e);
         }
 
         resultBuilder.setAcknowledgement("Topic Creation request received");

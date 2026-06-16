@@ -1,15 +1,16 @@
 package demo;
 
+import admin.Admin;
 import admin.MiniKafkaAdminClient;
 import admin.NewTopic;
 import consumer.MiniKafkaConsumer;
 import consumer.ConsumerRecord;
+import consumer.PollResult;
 import producer.MiniKafkaProducer;
 import producer.ProducerRecord;
 
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -42,7 +43,7 @@ public class OrderProcessingDemo {
         clusterProps.put("bootstrap.servers", "localhost:50051,localhost:50052,localhost:50053");
         clusterProps.put("broker.count", "3");
 
-        MiniKafkaAdminClient admin = MiniKafkaAdminClient.create(clusterProps);
+        Admin admin = MiniKafkaAdminClient.create(clusterProps);
         Thread.sleep(3000); // Wait for cluster initialization
         System.out.println("   ✓ Cluster started with 3 brokers");
         System.out.println("   ✓ Controller: localhost:50051");
@@ -53,7 +54,7 @@ public class OrderProcessingDemo {
         admin.createTopics(Arrays.asList(
             new NewTopic(ORDERS_TOPIC, 6, 1) // 6 partitions for load distribution
         ));
-        Thread.sleep(1000); // Wait for topic creation
+        Thread.sleep(3000); // Wait for topic creation and metadata propagation
         System.out.println("   ✓ Topic 'orders' created with 6 partitions");
         System.out.println("   ✓ Partitions distributed across 3 brokers\n");
 
@@ -76,7 +77,7 @@ public class OrderProcessingDemo {
         System.out.println("   ✓ Consumer Group 'inventory-group' started (2 consumers)");
         System.out.println("   ✓ Each consumer will receive different partitions\n");
 
-        Thread.sleep(2000); // Let consumers join groups
+        Thread.sleep(5000); // Let consumers join groups and fetch metadata
 
         // Step 4: Produce Orders
         printStep(4, "Order Service Publishing Orders");
@@ -123,7 +124,7 @@ public class OrderProcessingDemo {
         producerProps.put("batch.size", "16384");
         producerProps.put("linger.ms", "10");
 
-        MiniKafkaProducer<String, String> producer = new MiniKafkaProducer<>(producerProps);
+        MiniKafkaProducer<String, String> producer = new MiniKafkaProducer<>();
 
         String[] products = {"Laptop", "Phone", "Tablet", "Headphones", "Camera", "Watch"};
         String[] customers = {"Alice", "Bob", "Charlie", "Diana", "Eve", "Frank"};
@@ -164,24 +165,24 @@ public class OrderProcessingDemo {
                 consumerProps.put("client.id", consumerId);
                 consumerProps.put("auto.offset.reset", "earliest");
 
-                MiniKafkaConsumer<String, String> consumer = new MiniKafkaConsumer<>(consumerProps);
+                MiniKafkaConsumer<String, String> consumer = new MiniKafkaConsumer<>();
                 consumer.subscribe(Arrays.asList(ORDERS_TOPIC));
 
                 while (true) {
-                    List<ConsumerRecord<String, String>> records = consumer.poll(Duration.ofMillis(1000));
+                    PollResult pollResult = consumer.poll(Duration.ofMillis(1000));
 
-                    for (ConsumerRecord<String, String> record : records) {
-                        String orderId = record.key();
-                        String orderData = record.value();
+                    for (ConsumerRecord<String, String> record : pollResult.records()) {
+                        String orderId = record.getKey();
+                        String orderData = record.getValue();
 
                         // Simulate processing
                         Thread.sleep(50);
 
                         if (type.equals("PAYMENT")) {
-                            System.out.println(displayName + " Processed payment for " + orderId + " from partition " + record.partition());
+                            System.out.println(displayName + " Processed payment for " + orderId + " from partition " + record.getPartition());
                             processedPayments.incrementAndGet();
                         } else {
-                            System.out.println(displayName + " Updated inventory for " + orderId + " from partition " + record.partition());
+                            System.out.println(displayName + " Updated inventory for " + orderId + " from partition " + record.getPartition());
                             processedOrders.incrementAndGet();
                         }
 

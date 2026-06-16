@@ -47,8 +47,8 @@ public class HeartbeatServiceImpl extends HeartbeatServiceGrpc.HeartbeatServiceI
         // Process the heartbeat through the Controller interface
         broker.processBrokerHeartbeat(brokerId, request);
 
-        Logger.debug("Heartbeat received from broker {} (seq: {}, timestamp: {})",
-                brokerId, request.getSequenceNumber(), request.getTimestamp());
+        // Logger.debug("Heartbeat received from broker {} (seq: {}, timestamp: {})",
+        //         brokerId, request.getSequenceNumber(), request.getTimestamp());
 
         // Build the response
         HeartbeatResponse.Builder responseBuilder = HeartbeatResponse.newBuilder()

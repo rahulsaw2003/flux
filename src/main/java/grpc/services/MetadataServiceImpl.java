@@ -1,5 +1,7 @@
 package grpc.services;
 
+import metadata.InMemoryTopicMetadataRepository;
+import commons.IntRange;
 import metadata.snapshots.BrokerMetadata;
 import metadata.snapshots.PartitionMetadata;
 import proto.*;
@@ -81,9 +83,38 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
             response.putBrokerDetails(entry.getKey(), details);
         }
 
-        // TODO: TopicDetails should be here, but the way topic metadata is currently managed will probs get reworked soon (and i got lost in the sauce).
-        //  Implement TopicDetails into the response when that's done
-        response.putAllTopicDetails(new HashMap<>());
+        // Build TopicDetails from InMemoryTopicMetadataRepository
+        Map<String, proto.TopicDetails> topicDetailsMap = new HashMap<>();
+        for (String topicName : InMemoryTopicMetadataRepository.getInstance().getActiveTopics()) {
+            try {
+                IntRange range = InMemoryTopicMetadataRepository.getInstance().getPartitionIdRangeForTopic(topicName);
+                int numPartitions = range.end() - range.start() + 1;
+
+                // Build partition details map for this topic
+                Map<Integer, proto.PartitionDetails> partitionDetailsForTopic = new HashMap<>();
+                for (int partitionId = range.start(); partitionId <= range.end(); partitionId++) {
+                    // Find which broker hosts this partition
+                    String brokerForPartition = broker.getHost() + ":" + broker.getPort(); // For now, all partitions are on controller
+
+                    proto.PartitionDetails partitionDetails = proto.PartitionDetails.newBuilder()
+                        .setPartitionId(partitionId)
+                        .setBrokerId(brokerForPartition)
+                        .build();
+
+                    partitionDetailsForTopic.put(partitionId, partitionDetails);
+                }
+
+                proto.TopicDetails.Builder topicBuilder = proto.TopicDetails.newBuilder()
+                    .setTopicName(topicName)
+                    .setNumPartitions(numPartitions)
+                    .putAllPartitionDetails(partitionDetailsForTopic);
+
+                topicDetailsMap.put(topicName, topicBuilder.build());
+            } catch (IllegalArgumentException e) {
+                // Skip topics that can't be found
+            }
+        }
+        response.putAllTopicDetails(topicDetailsMap);
 
         responseObserver.onNext(response.build());
         responseObserver.onCompleted();

@@ -61,35 +61,50 @@ public class Cluster {
         MiniKafkaExecutor.getExecutorService().submit(() -> {
             BrokerServer controllerServer = new BrokerServer(controllerNode);
             try {
+                Logger.info("Starting controller broker server on port " + controllerNode.getPort());
                 controllerServer.start(controllerNode.getPort());
+                Logger.info("Controller broker server started successfully");
                 latch.countDown();
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                Logger.error("Failed to start controller broker server", e);
+                throw new RuntimeException("Controller server startup failed", e);
+            } catch (Exception e) {
+                Logger.error("Unexpected error starting controller", e);
+                throw new RuntimeException("Controller startup failed with unexpected error", e);
             }
         });
 
         try {
             // The thread will block until our latch gets counted down to 0 (which only happens after the controller starts up).
             // By doing this, we can ensure the controller is ready before sending any requests.
+            Logger.info("Waiting for controller to start (10 second timeout)...");
             if (latch.await(10, TimeUnit.SECONDS)) {
+                Logger.info("Controller started, now starting follower brokers...");
                 for (Broker b : nodes) {
                     if (!b.isActiveController()) {
                         // Start up each broker in its own thread
                         MiniKafkaExecutor.getExecutorService().submit(() -> {
                             BrokerServer server = new BrokerServer(b);
                             try {
+                                Logger.info("Starting follower broker " + b.getBrokerId() + " on port " + b.getPort());
                                 server.start(b.getPort());
+                                Logger.info("Follower broker " + b.getBrokerId() + " started successfully");
                                 // Once each server is started, it will immediately make a BrokerRegistrationRequest to the controller
                                 b.registerBroker(); // initial metadata state is handled here too
                             } catch (IOException e) {
-                                throw new RuntimeException(e);
+                                Logger.error("Failed to start follower broker " + b.getBrokerId(), e);
+                                throw new RuntimeException("Follower broker startup failed", e);
                             }
                         });
                     }
                 }
+            } else {
+                Logger.error("Controller failed to start within 10 seconds - latch timeout!");
+                throw new RuntimeException("Controller startup timeout");
             }
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            Logger.error("Interrupted while waiting for controller startup", e);
+            throw new RuntimeException("Controller startup interrupted", e);
         }
     }
 

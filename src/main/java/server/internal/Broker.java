@@ -85,7 +85,9 @@ public class Broker implements Controller {
 
     @Override
     public void createTopics(Collection<proto.Topic> topics) throws IOException {
+        Logger.info("createTopics called on broker " + brokerId + ", isActiveController=" + isActiveController);
         if (!isActiveController) {
+            Logger.warn("Broker " + brokerId + " is not the active controller, skipping topic creation");
             return;
         }
         // TODO: im assuming this is old code? so I made the forl loop below to process all topics
@@ -297,7 +299,7 @@ public class Broker implements Controller {
      */
     public void startHeartbeat() {
         if (isActiveController) {
-            Logger.debug("Broker is active controller, not starting heartbeat sender");
+            // Logger.debug("Broker is active controller, not starting heartbeat sender");
             return;
         }
 

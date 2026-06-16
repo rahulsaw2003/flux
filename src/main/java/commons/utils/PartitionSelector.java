@@ -3,6 +3,8 @@ package commons.utils;
 import commons.IntRange;
 import exceptions.InvalidTopicException;
 import metadata.TopicMetadataRepository;
+import metadata.snapshots.ClusterSnapshot;
+import metadata.snapshots.TopicMetadata;
 import producer.MurmurHash2;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -19,19 +21,22 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class PartitionSelector {
     private static AtomicInteger roundRobinCounter = new AtomicInteger(0);
 
-    public static int getPartitionNumberForRecord(TopicMetadataRepository topicMetadata, Integer partitionNumber, String key, String topicName, int numPartitions) {
-        if (topicName != null && !topicName.isEmpty() && topicMetadata.topicExists(topicName)) {
-            return getPartitionNumWhenTopicExists(topicMetadata, partitionNumber, key, topicName);
+    public static int getPartitionNumberForRecord(ClusterSnapshot clusterMetadata, Integer partitionNumber, String key, String topicName, int numPartitions) {
+        if (topicName != null && !topicName.isEmpty() && clusterMetadata.topics().containsKey(topicName)) {
+            return getPartitionNumWhenTopicExists(clusterMetadata, partitionNumber, key, topicName);
         } else {
             throw new InvalidTopicException(topicName);
         }
     }
 
-    private static int getPartitionNumWhenTopicExists(TopicMetadataRepository topicMetadata, Integer partitionNumber, String key, String topicName) {
-        IntRange validPartitionIdRange = topicMetadata.getPartitionIdRangeForTopic(topicName);
-        int min = validPartitionIdRange.start();
-        int max = validPartitionIdRange.end();
-        int range = max - min + 1;
+    private static int getPartitionNumWhenTopicExists(ClusterSnapshot clusterMetadata, Integer partitionNumber, String key, String topicName) {
+        TopicMetadata topicMetadata = clusterMetadata.topics().get(topicName);
+        int numPartitionsForTopic = topicMetadata.numPartitions();
+
+        // Partitions for a topic are numbered 0 to numPartitions-1
+        int min = 0;
+        int max = numPartitionsForTopic - 1;
+        int range = numPartitionsForTopic;
 
         // Partition number is valid and within range.
         if (partitionNumber != null && (min <= partitionNumber && partitionNumber <= max))  {

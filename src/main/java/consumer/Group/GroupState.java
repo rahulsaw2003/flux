@@ -1,5 +1,7 @@
 package consumer.Group;
 
+import proto.Assignment;
+
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,4 +19,6 @@ public class GroupState {
 
     public Instant roundStartedAt = Instant.EPOCH;
     public int roundTimeoutMs = 10000;
+
+    public Assignment currentAssignment = null; // Full assignment from leader
 }
